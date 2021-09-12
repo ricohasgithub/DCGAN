@@ -10,6 +10,7 @@
 import os
 import random
 
+import numpy as np
 import matplotlib as plt
 
 import torch
@@ -103,7 +104,7 @@ class Discrimator(nn.Module):
 
         return validity
 
-def train(epochs, dataloader, batch_size, b1, b2, sample_interval):
+def train(epochs, dataloader, b1, b2, sample_interval=400):
 
     # Loss function
     adversarial_loss = nn.BCELoss()
@@ -117,9 +118,9 @@ def train(epochs, dataloader, batch_size, b1, b2, sample_interval):
     discriminator.apply(weights_init_normal)
 
     # Generator optimizer
-    optimizer_G = torch.optim.Adam(generator.parameters(), lr=0.01, betas=(b1, b2))
+    optimizer_G = torch.optim.Adam(generator.parameters(), lr=0.0002, betas=(b1, b2))
     # Discrimnator optimizer
-    optimizer_D = torch.optim.Adam(discriminator.parameters(), lr=0.01, betas=(b1, b2))
+    optimizer_D = torch.optim.Adam(discriminator.parameters(), lr=0.0002, betas=(b1, b2))
 
     Tensor = torch.FloatTensor
 
@@ -135,8 +136,38 @@ def train(epochs, dataloader, batch_size, b1, b2, sample_interval):
             optimizer_G.zero_grad()
 
             # Sample noise as generator input
+            z = Variable(Tensor(np.random.normal(0, 1, (imgs.shape[0], 100))))
 
+            # Generate a batch of images
+            gen_imgs = generator(z)
 
+            # Loss measures generator's ability to fool the discriminator
+            g_loss = adversarial_loss(discriminator(gen_imgs), valid)
+            g_loss.backward()
+            optimizer_G.step()
+
+            # Train discriminator
+            optimizer_D.zero_grad()
+
+            # Measure discriminator's ability to classify real from generated samples
+            real_loss = adversarial_loss(discriminator(real_imgs), valid)
+            fake_loss = adversarial_loss(discriminator(gen_imgs.detach()), fake)
+            d_loss = (real_loss + fake_loss) / 2
+
+            d_loss.backward()
+            optimizer_D.step()
+
+            print(
+                "[Epoch %d/%d] [Batch %d/%d] [D loss: %f] [G loss: %f]"
+                % (epoch, epochs, i, len(dataloader), d_loss.item(), g_loss.item())
+            )
+
+            batches_done = epoch * len(dataloader) + i
+            if batches_done % sample_interval == 0:
+                save_image(gen_imgs.data[:25], "images/%d.png" % batches_done, nrow=5, normalize=True)
+
+# Create output directory for generated images
+os.makedirs("images", exist_ok=True)
 
 # Configure data loader
 os.makedirs("../../data/mnist", exist_ok=True)
@@ -152,3 +183,5 @@ dataloader = torch.utils.data.DataLoader(
     batch_size=64,
     shuffle=True,
 )
+
+train(200, dataloader, 0.5, 0.999)
