@@ -3,6 +3,7 @@
     Rico Zhu - September 8th, 2021 @ Duke University
     
     Pytorch implementation of a DCGAN, Progressive GAN, and a StyleGAN
+    DCGAN inspiration: https://github.com/eriklindernoren/PyTorch-GAN/blob/master/implementations/dcgan/dcgan.py
 
 '''
 
@@ -14,6 +15,12 @@ import matplotlib as plt
 import torch
 import torch.nn as nn
 import torch.optim as optim
+
+import torchvision.transforms as transforms
+from torchvision import datasets
+from torchvision.utils import save_image
+from torch.utils.data import DataLoader
+from torch.autograd import Variable
 
 # Function to initialize a given weight to a normal distribution
 def weights_init_normal(m):
@@ -96,7 +103,7 @@ class Discrimator(nn.Module):
 
         return validity
 
-def train(epochs, batch_size, b1, b2, sample_interval):
+def train(epochs, dataloader, batch_size, b1, b2, sample_interval):
 
     # Loss function
     adversarial_loss = nn.BCELoss()
@@ -109,4 +116,39 @@ def train(epochs, batch_size, b1, b2, sample_interval):
     generator.apply(weights_init_normal)
     discriminator.apply(weights_init_normal)
 
+    # Generator optimizer
+    optimizer_G = torch.optim.Adam(generator.parameters(), lr=0.01, betas=(b1, b2))
+    # Discrimnator optimizer
+    optimizer_D = torch.optim.Adam(discriminator.parameters(), lr=0.01, betas=(b1, b2))
 
+    Tensor = torch.FloatTensor
+
+    for epoch in range(epochs):
+        for i, (imgs, _) in enumerate(dataloader):
+
+            # Adversarial ground truths
+            valid = Variable(Tensor(imgs.shape[0], 1).fill_(1.0), requires_grad=False)
+            fake = Variable(Tensor(imgs.shape[0], 1).fill_(0.0), requires_grad=False)
+            real_imgs = Variable(imgs.type(Tensor))
+
+            # Train generator
+            optimizer_G.zero_grad()
+
+            # Sample noise as generator input
+
+
+
+# Configure data loader
+os.makedirs("../../data/mnist", exist_ok=True)
+dataloader = torch.utils.data.DataLoader(
+    datasets.MNIST(
+        "../../data/mnist",
+        train=True,
+        download=True,
+        transform=transforms.Compose(
+            [transforms.Resize(32), transforms.ToTensor(), transforms.Normalize([0.5], [0.5])]
+        ),
+    ),
+    batch_size=64,
+    shuffle=True,
+)
