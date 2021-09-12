@@ -45,6 +45,7 @@ class Generator(nn.Module):
 
         # Conv block dimensions
         self.conv_dim = conv_dim
+        self.half_conv_dim = conv_dim // 2
         self.img_channels = img_channels
         self.conv_kernels = (3 if rgb else 1)
 
@@ -56,10 +57,11 @@ class Generator(nn.Module):
             nn.Conv2d(self.conv_dim, self.conv_dim, self.conv_kernels, stride=1, padding=1),
             nn.BatchNorm2d(self.conv_dim, 0.8),
             nn.LeakyReLU(0.2, inplace=True),
-            nn.Conv2d(self.conv_dim, self.conv_dim // 2, self.conv_kernels, stride=1, padding=1),
-            nn.BatchNorm2d(self.conv_dim // 2, 0.8),
+            nn.Upsample(scale_factor=2),
+            nn.Conv2d(self.conv_dim, self.half_conv_dim, self.conv_kernels, stride=1, padding=1),
+            nn.BatchNorm2d(self.half_conv_dim, 0.8),
             nn.LeakyReLU(0.2, inplace=True),
-            nn.Conv2d(self.conv_dim // 2, self.img_channels, self.conv_kernels, stride=1, padding=1),
+            nn.Conv2d(self.half_conv_dim, self.img_channels, self.conv_kernels, stride=1, padding=1),
             nn.Tanh(),
         )
 
