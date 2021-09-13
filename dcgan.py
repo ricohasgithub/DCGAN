@@ -166,10 +166,10 @@ def train(epochs, dataloader, b1, b2, sample_interval=400):
 
             batches_done = epoch * len(dataloader) + i
             if batches_done % sample_interval == 0:
-                save_image(gen_imgs.data[:25], "images/%d.png" % batches_done, nrow=5, normalize=True)
+                save_image(gen_imgs.data[:25], "dcgan_images/%d.png" % batches_done, nrow=5, normalize=True)
 
 # Create output directory for generated images
-os.makedirs("images", exist_ok=True)
+os.makedirs("dcgan_images", exist_ok=True)
 
 # Configure data loader
 os.makedirs("../../data/mnist", exist_ok=True)
